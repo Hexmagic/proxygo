@@ -142,13 +142,13 @@ func buildConnect(con net.Conn, header []string) (peer net.Conn, domain, address
 }
 
 func HandleProxy(client net.Conn) {
-	 defer func(){ // 必须要先声明defer，否则不能捕获到panic异常
-        fmt.Println("c")
-        if err:=recover();err!=nil{
-            fmt.Println(err) // 这里的err其实就是panic传入的内容，55
-        }
-        fmt.Println("d")
-    }()
+	defer func() { // 必须要先声明defer，否则不能捕获到panic异常
+		fmt.Println("c")
+		if err := recover(); err != nil {
+			fmt.Println(err) // 这里的err其实就是panic传入的内容，55
+		}
+		fmt.Println("d")
+	}()
 	var buff [1024]byte
 	var peer net.Conn
 	_, err := client.Read(buff[:])
