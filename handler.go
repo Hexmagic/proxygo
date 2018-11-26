@@ -143,19 +143,31 @@ func buildConnect(con net.Conn, header []string) (peer net.Conn, domain, address
 
 func HandleProxy(client net.Conn) {
 	defer func() { // 必须要先声明defer，否则不能捕获到panic异常
-		fmt.Println("c")
 		if err := recover(); err != nil {
 			fmt.Println(err) // 这里的err其实就是panic传入的内容，55
 		}
-		fmt.Println("d")
+		fmt.Println("error occured")
 	}()
 	var buff [1024]byte
 	var peer net.Conn
 	_, err := client.Read(buff[:])
 	checkError(err)
 	peer, domain, address, err := getHttpProxy(client, buff[:])
-	checkError(err)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	go func() {
+		defer func() { // 必须要先声明defer，否则不能捕获到panic异常
+			if err := recover(); err != nil {
+				fmt.Println(err) // 这里的err其实就是panic传入的内容，55
+			}
+			fmt.Println("close error occured")
+		}()
+		if peer == nil {
+			fmt.Println("Nil Peer !!!")
+			return
+		}
 		defer peer.Close()
 		defer client.Close()
 		proxy.DecRef(proxiesMap, domain, address)
@@ -179,6 +191,11 @@ func getHttpProxy(con net.Conn, buff []byte) (peer net.Conn, domain, address str
 }
 
 func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(err)
+		}
+	}()
 	configs := proxy.Load("config.json")
 	for _, v := range configs.Configs {
 		proxies = append(proxies, fmt.Sprintf("%s:%d", v.LocalAddr, v.LocalPort))
