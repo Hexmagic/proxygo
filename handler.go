@@ -120,7 +120,9 @@ func buildConnect(con net.Conn, header []string) (peer net.Conn, domain, address
 	head := header[0]
 	uri := strings.Split(head, " ")[1]
 	parsed, err := url.Parse(uri)
-	checkError(err)
+	if err != nil {
+		fmt.Printf("Error Split Host String %s\n", uri)
+	}
 	var port string
 	if strings.Contains(parsed.Host, ":") {
 		lst := strings.Split(parsed.Host, ":")
@@ -130,9 +132,13 @@ func buildConnect(con net.Conn, header []string) (peer net.Conn, domain, address
 		port = parsed.Opaque
 	}
 	_port, err := strconv.Atoi(port)
-	checkError(err)
+	if err != nil {
+		fmt.Printf("Error Parse Port %d\n", port)
+	}
 	peer, address, err = getProxyByDomain(domain, _port)
-	checkError(err)
+	if err != nil {
+		fmt.Printf("Get Proxy By Domain %s Error ", domain)
+	}
 	_, err = con.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
 	if err != nil {
 		peer.Close()
@@ -151,18 +157,21 @@ func HandleProxy(client net.Conn) {
 	var buff [1024]byte
 	var peer net.Conn
 	_, err := client.Read(buff[:])
-	checkError(err)
+	if err != nil {
+		fmt.Println("Client Read Error")
+		return
+	}
 	peer, domain, address, err := getHttpProxy(client, buff[:])
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("%s Get Http %s Proxy Error\n", domain, address)
 		return
 	}
 	go func() {
-		defer func() { // 必须要先声明defer，否则不能捕获到panic异常
+		defer func() {
 			if err := recover(); err != nil {
-				fmt.Println(err) // 这里的err其实就是panic传入的内容，55
+				fmt.Println(err)
 			}
-			fmt.Println("close error occured")
+			fmt.Println("")
 		}()
 		if peer == nil {
 			fmt.Println("Nil Peer !!!")
@@ -185,7 +194,7 @@ func getHttpProxy(con net.Conn, buff []byte) (peer net.Conn, domain, address str
 		peer, domain, address, err = buildConnect(con, headerList)
 	} else {
 		/*peer, err = buildHttpProxy(con, headerList)*/
-		fmt.Println("okkkk")
+		fmt.Println("Not Connect")
 	}
 	return
 }
